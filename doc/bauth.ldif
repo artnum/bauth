@@ -1,0 +1,69 @@
+# schema still in dev anything can change
+dn: cn=bauth,cn=schema,cn=config
+objectClass: olcSchemaConfig
+olcObjectIdentifier: bauthRoot 1.3.6.1.4.1.31204.100.22
+olcObjectIdentifier: bauthAttr bauthRoot:1.1
+olcObjectIdentifier: bauthClass bauthRoot:1.2
+olcAttributeTypes: (bauthAttr:1 NAME 'bauthUsername'
+  DESC 'Username for authentication'
+  SUP name
+  EQUALITY caseExactMatch
+  SUBSTR caseExactSubstringsMatch
+  ORDERING caseExactOrderingMatch
+ )
+olcAttributeTypes: (bauthAttr:2 NAME 'bauthPassword'
+  SUP userPassword
+  DESC 'The Password (pbkdf2 version of it), starts with {BAUTH}'
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
+  EQUALITY octetStringMatch
+  ORDERING octetStringOrderingMatch
+ )
+olcAttributeTypes: (bauthAttr:3 NAME 'bauthIterations'
+  DESC 'Number of iteration for pbkdf2'
+  EQUALITY integerMatch
+  ORDERING integerOrderingMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+  SINGLE-VALUE
+ )
+olcAttributeTypes: (bauthAttr:4 NAME 'bauthAlgo'
+  DESC 'Hash algo for pbkdf2'
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.40{30}
+  EQUALITY octetStringMatch
+  ORDERING octetStringOrderingMatch
+  SINGLE-VALUE
+ )
+olcAttributeTypes: (bauthAttr:5 NAME 'bauthSalt'
+  DESC 'Salt used for pbkdf2'
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.40{256}
+  EQUALITY octetStringMatch
+  ORDERING octetStringOrderingMatch
+  SINGLE-VALUE
+ )
+olcAttributeTypes: (bauthAttr:6 NAME 'bauthCreated'
+  DESC 'Unix timestamp of creation'
+  EQUALITY integerMatch
+  ORDERING integerOrderingMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+  SINGLE-VALUE
+ )
+olcAttributeTypes: (bauthAttr:7 NAME 'bauthRelation'
+  DESC 'Any relation with other database might be stored here'
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+  EQUALITY caseExactMatch
+  SUBSTR caseExactSubstringsMatch
+  ORDERING caseExactOrderingMatch
+ )
+olcObjectClasses: (bauthClass:1 NAME 'bauthEntry'
+  SUP top
+  STRUCTURAL
+  DESC 'Structural entry for bauth password'
+  MUST ( bauthUsername $ bauthPassword $ bauthIterations $ bauthAlgo $ bauthSalt $ bauthCreated )
+  MAY ( bauthRelation )
+ )
+olcObjectClasses: (bauthClass:2 NAME 'bauthExtend'
+  SUP top
+  AUXILIARY
+  DESC 'Auxiliary class to extend a user class'
+  MUST ( bauthIterations $ bauthAlgo $ bauthSalt $ bauthCreated )
+  MAY ( bauthUsername $ bauthPassword $ bauthRelation )
+ )

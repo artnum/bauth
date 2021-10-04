@@ -1,0 +1,17 @@
+{
+    "name": "artnum/bauth",
+    "description": "Authentication, bearer token",
+    "license": "MIT",
+    "keywords": ["authentication"],
+    "authors": [{
+        "name": "Etienne Bagnoud",
+        "email": "etienne@artnum.ch",
+        "homepage": "https://artnum.ch",
+        "role": "Developper"
+    }],
+    "autoload": {
+        "psr-4": {
+            "": "src/"
+        }
+    }
+}
