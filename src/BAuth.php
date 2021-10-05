@@ -68,7 +68,6 @@ class BAuth {
 
     function auth (string $user, string $password):string {
         $sPassword = $this->ustore->getPassword($user);
-        print_r($sPassword);
         if (empty($sPassword)) { return ''; }
 
         $hashList = hash_algos();

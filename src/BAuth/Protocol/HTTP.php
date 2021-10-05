@@ -9,7 +9,7 @@ class HTTP implements \BAuth\Protocol {
     protected $log;
     function __construct(\BAuth $auth, string $log = '') {
         $this->auth = $auth;
-        $this->log = $log;
+        $this->log = empty($log) ? 'syslog' : $log;
     }
 
     function authorize():int {
@@ -34,12 +34,8 @@ class HTTP implements \BAuth\Protocol {
     }
 
     function account():void {
-        $log = $this->log;
-        if (empty($log)) {
-            $log = 'syslog';
-        }
         $user = $this->auth->getCurrentUser();
-        call_user_func($log, LOG_INFO, sprintf('USER <%s>, RESSOURCE <%s>, METHOD <%s>, SECURE <%s>, FROM <%s>, DATE <%s>',
+        call_user_func($this->log, LOG_INFO, sprintf('USER <%s>, RESSOURCE <%s>, METHOD <%s>, SECURE <%s>, FROM <%s>, DATE <%s>',
             $user['user'],
             $_SERVER['REQUEST_URI'],
             $_SERVER['REQUEST_METHOD'],
@@ -47,5 +43,33 @@ class HTTP implements \BAuth\Protocol {
             $_SERVER['REMOTE_ADDR'],
             (new \DateTime())->format('c')
         ));
+    }
+
+    function run(string $realm):int {
+        $authStatus = $this->authorize();
+        switch ($authStatus) {
+            case BAuth::TOKEN_OK:
+                $this->account();
+                return BAuth\Protocol::AUTH_OK;
+            case BAuth::TOKEN_EXPIRED:
+                $error = [
+                    'error' => 'invalid_client',
+                    'error_description' => 'Authentication expired'
+                ];
+            case BAuth::TOKEN_INVALID:
+                $error['error_description'] = 'Authentication invalid';
+                $tk = $this->authenticate();
+                header('Content-Type: application/json');
+                header('Cache-Control: no-cache');
+                header('Pragma: no-cache');
+                if (empty($tk)) {
+                    http_response_code(401);
+                    header('WWW-Authenticate: Basic realm="' . $realm . '"');
+                    echo json_encode($error);
+                    return BAuth\Protocol::AUTH_INVALID;
+                }
+                echo json_encode(['access_token' => $tk, 'token_type' => 'bearer', 'expires_in' => $this->auth->getTokenMaxTime()]);
+                return BAuth\Protocol::AUTH_DONE;
+        }
     }
 }
