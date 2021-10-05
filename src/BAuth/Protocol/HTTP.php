@@ -2,19 +2,21 @@
 
 namespace BAuth\Protocol;
 
+use BAuth;
+
 class HTTP implements \BAuth\Protocol {
     protected $auth;
     protected $log;
-    function __construct(\BAuth $auth, $log = null) {
+    function __construct(\BAuth $auth, string $log = '') {
         $this->auth = $auth;
         $this->log = $log;
     }
 
-    function authorize():bool {
-        if (empty($_SERVER['HTTP_AUTHORIZATION'])) { return false; }
+    function authorize():int {
+        if (empty($_SERVER['HTTP_AUTHORIZATION'])) { return BAuth::TOKEN_INVALID; }
         $authHeader = trim($_SERVER['HTTP_AUTHORIZATION']);
 
-        if (substr($authHeader, 0, 6) !== 'Bearer') { return false; }
+        if (substr($authHeader, 0, 6) !== 'Bearer') { return BAuth::TOKEN_INVALID; }
         $token = trim(substr($authHeader, 6));
        
         return $this->auth->checkToken($token);
@@ -33,7 +35,7 @@ class HTTP implements \BAuth\Protocol {
 
     function account():void {
         $log = $this->log;
-        if ($log === null) {
+        if (empty($log)) {
             $log = 'syslog';
         }
         $user = $this->auth->getCurrentUser();

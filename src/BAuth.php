@@ -4,8 +4,13 @@ class BAuth {
     protected $ustore;
     protected $tstore;
     protected $currentUser;
-    const SALT_LENGTH = 32;
-    const ITERATIONS = 50000;
+    protected $saltLength = 32;
+    protected $iterations = 50000;
+    protected $tokenMaxTime = 14400; // about half a work day
+
+    const TOKEN_OK      = 0;
+    const TOKEN_EXPIRED = 1;
+    const TOKEN_INVALID = 2;
 
     function __construct (BAuth\User $ustore, BAuth\Token $tstore) {
         $this->ustore = $ustore;   
@@ -15,6 +20,23 @@ class BAuth {
 
     function b64token (string $binaryToken):string {
         return str_replace(['+', '/', '='], ['-', '_', '.'], base64_encode($binaryToken));
+    }
+
+    function setSaltLength (int $length):void {
+        if ($length > 256) { $length = 256; }
+        $this->saltLength = $length;
+    }
+
+    function setIterations (int $iterations):void {
+        $this->iterations = $iterations;
+    }
+
+    function setTokenMaxTime (int $max):void {
+        $this->tokenMaxTime = $max;
+    }
+
+    function getTokenMaxTime ():int {
+        return $this->tokenMaxTime;
     }
 
     function gen_token (string $user, string $password):string {
@@ -30,18 +52,18 @@ class BAuth {
         return $token;
     }
 
-    function checkToken (string $token):bool {
+    function checkToken (string $token):int {
         $object = $this->tstore->getToken($token);
-        if (empty($object)) { return false; }
-        if ((new DateTime())->getTimestamp() - $object['date']->getTimestamp() > 1500000) {
+        if (empty($object)) { return self::TOKEN_INVALID; }
+        if ((new DateTime())->getTimestamp() - $object['date']->getTimestamp() > $this->tokenMaxTime) {
             $this->tstore->delToken($token);
-            return false;
+            return self::TOKEN_EXPIRED;
         }
         $this->currentUser = [
             'token' => $token,
             'user' => $object['user']
         ];
-        return true;
+        return self::TOKEN_OK;
     }
 
     function auth (string $user, string $password):string {
@@ -77,8 +99,8 @@ class BAuth {
             }
         }
         if (empty($hash)) { throw new Exception('No hash algo found'); }
-        $salt = random_bytes(self::SALT_LENGTH);
-        $derived = hash_pbkdf2($hash, $password, $salt, self::ITERATIONS, 0, false);
-        return $this->ustore->setPassword($user, $derived, $hash, $salt, self::ITERATIONS);
+        $salt = random_bytes($this->saltLength);
+        $derived = hash_pbkdf2($hash, $password, $salt, $this->iterations, 0, false);
+        return $this->ustore->setPassword($user, $derived, $hash, $salt, $this->iterations);
     }
 }

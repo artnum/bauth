@@ -2,7 +2,7 @@
 namespace BAuth;
 
 interface Protocol {
-    function authorize():bool;
+    function authorize():int;
     function authenticate():string;
     function account():void;
 }
